@@ -6,22 +6,22 @@
 # init
 WORK_DIR=$(pwd)
 ANYKERNEL="${WORK_DIR}/anykernel"
-ANYKERNEL_REPO="https://github.com/sirnewbies/Anykernel3.git" 
-ANYKERNEL_BRANCH="topaz"
-KERNEL_DIR="topaz"
+ANYKERNEL_REPO="https://github.com/drenzzz/AnyKernel3.git" 
+ANYKERNEL_BRANCH="garnet"
+KERNEL_DIR="garnet"
 
 # VERSIONING
 KSU="ksu"
 NKSU="non-ksu"
-REL="v1.6"
-KERNEL="QuantumCharge-topaz-tapas-xun-$REL-$KSU"
+REL="v2"
+KERNEL="Shorekeeper-$REL-$NKSU"
 ZIPNAME=$KERNEL.zip
-KERN_IMG=$WORK_DIR/out/android13-5.15/dist/Image
+KERN_IMG=$WORK_DIR/out/garnet/arch/arm64/boot/Image.gz
 
 # setup telegram
-CHATIDQ="-1001597724605"
-CHATID="-1001597724605" # Group/channel chatid (use rose/userbot to get it)
-TELEGRAM_TOKEN="5136791856:AAGY5TeaVoeJbd6a2BAlxAjOc-MFWOJzZds" # Get from botfather
+CHATIDQ="-1001865504975"
+CHATID="-1001865504975" # Group/channel chatid (use rose/userbot to get it)
+TELEGRAM_TOKEN="7869677269:AAF-4G93D7SO9MlAZNcVo_f59VtTjVEsTxc" # Get from botfather
 
 # setup color
 red='\033[0;31m'
@@ -36,15 +36,6 @@ function clean() {
     rm -rf ${ANYKERNEL}
     rm -rf out
 }
-
-function update_ksu() {
-    echo -e "\n"
-    echo -e "$yellow << updateing kernelsu >> \n$white"
-    echo -e "\n"
-    cd $KERNEL_DIR || exit
-    ./update_ksu.sh
-}
-
 function pack_kernel() {
     echo -e "\n"
     echo -e "$yellow << packing kernel >> \n$white"
@@ -52,7 +43,7 @@ function pack_kernel() {
 
     TELEGRAM_FOLDER="${HOME}"/workspaces/telegram
     if ! [ -d "${TELEGRAM_FOLDER}" ]; then
-        git clone https://github.com/sirnewbies/telegram.sh/ "${TELEGRAM_FOLDER}"
+        git clone https://github.com/drenzzz/telegram.sh/ "${TELEGRAM_FOLDER}"
     fi
 
     TELEGRAM="${TELEGRAM_FOLDER}"/telegram
@@ -75,7 +66,7 @@ function build_kernel() {
     echo -e "\n"
     
     cd $WORK_DIR
-    LTO=thin BUILD_CONFIG=$KERNEL_DIR/build.config.gki.aarch64 build/build.sh
+    LTO=thin BUILD_CONFIG=garnet/build.config.gki.custom build/build.sh 2>&1 | tee build.log && cat build.log | nc termbin.com 9999
 
     if [ -e "$KERN_IMG" ]; then
         echo -e "\n"
@@ -91,5 +82,4 @@ function build_kernel() {
 
 # exe
 clean
-update_ksu
 build_kernel
