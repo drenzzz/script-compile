@@ -50,7 +50,7 @@ function pack_kernel() {
 
     git clone "$ANYKERNEL_REPO" -b "$ANYKERNEL_BRANCH" "$ANYKERNEL"
 
-    cp $KERN_IMG $ANYKERNEL/Image
+    cp $KERN_IMG $ANYKERNEL/Image.gz
     cd $ANYKERNEL || exit
     zip -r9 $ZIPNAME ./*
 
