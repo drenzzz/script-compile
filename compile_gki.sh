@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Copyright (C) 2023 sirNewbies
+# Copyright (C) 2024 Drenzzz
 #
 
 # init
@@ -36,6 +36,7 @@ function clean() {
     rm -rf ${ANYKERNEL}
     rm -rf out
 }
+
 function pack_kernel() {
     echo -e "\n"
     echo -e "$yellow << packing kernel >> \n$white"
@@ -54,16 +55,51 @@ function pack_kernel() {
     cd $ANYKERNEL || exit
     zip -r9 $ZIPNAME ./*
 
-    $TELEGRAM -f $ZIPNAME -t $TELEGRAM_TOKEN -c $CHATIDQ
+    # Hitung waktu build
+    END_TIME=$(date +%s)
+    DIFF=$((END_TIME - START_TIME))
+
+    # Ambil informasi tambahan
+    DATE_BUILD=$(date +"%A, %B %d, %Y | %H:%M:%S ETC")
+    DOCKER_OS=$(lsb_release -d | cut -f2- || uname -o)
+    KERNEL_VERSION=$(make -s kernelversion -C "$WORK_DIR/garnet" 2>/dev/null)
+
+    # Ambil versi clang dan commit hash
+    CLANG_INFO=$("$WORK_DIR/prebuilts-master/clang/host/linux-x86/clang-19/bin/clang" --version)
+    CLANG_VERSION=$("$WORK_DIR/prebuilts-master/clang/host/linux-x86/clang-19/bin/clang" --version | grep -oP 'version \K[^\s]+')
+    CLANG_URL="https://android.googlesource.com/toolchain/llvm-project"
+    CLANG_COMMIT=$(echo "$CLANG_INFO" | grep -oP 'based on r\K[0-9a-f]+') # Ambil commit hash
+
+    # Hitung MD5 Checksum dari file ZIP
+    MD5_CHECKSUM=$(md5sum "$ZIPNAME" | awk '{ print $1 }')
+
+    # Kirim file ke Telegram dengan deskripsi lengkap menggunakan escape characters (monospace)
+    tg_post_build() {
+        $TELEGRAM -f "$1" -t $TELEGRAM_TOKEN -c $CHATIDQ -T "Build Summary
+Build took : $((DIFF / 60)) minute(s) and $((DIFF % 60)) second(s)
+Date build : $DATE_BUILD
+Docker OS : $DOCKER_OS
+Kernel Version : $KERNEL_VERSION
+Clang version : $CLANG_VERSION ($CLANG_URL $CLANG_COMMIT)
+MD5 Checksum : $MD5_CHECKSUM"
+    }
+
+    # Panggil fungsi dengan path dan deskripsi
+    tg_post_build "$ZIPNAME"
+
     echo -e "\n"
     echo -e "$green << kernel uploaded to telegram >>"
     echo -e "\n"
 }
 
+
 function build_kernel() {
     echo -e "\n"
-    echo -e "$yrllow << building kernel >> \n$white"
+    echo -e "$yellow << building kernel >> \n$white"
     echo -e "\n"
+
+    # Mulai pencatatan waktu
+    START_TIME=$(date +%s)
     
     cd $WORK_DIR
     LTO=thin BUILD_CONFIG=garnet/build.config.gki.custom build/build.sh 2>&1 | tee build.log && cat build.log | nc termbin.com 9999
