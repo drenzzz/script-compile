@@ -71,12 +71,12 @@ function pack_kernel() {
 
     tg_post_build() {
         $TELEGRAM -f "$1" -t $TELEGRAM_TOKEN -c $CHATIDQ -T "Build Summary
-Build took : \`$((DIFF / 60)) minute(s) and $((DIFF % 60)) second(s)\`
-Date build : \`$DATE_BUILD\`
-Docker OS : \`$DOCKER_OS\`
-Kernel Version : \`$KERNEL_VERSION\`
-Clang version : \`$CLANG_VERSION ($CLANG_URL $CLANG_COMMIT)\`
-MD5 Checksum : \`$MD5_CHECKSUM\`"
+Build took : $((DIFF / 60)) minute(s) and $((DIFF % 60)) second(s)
+Date build : $DATE_BUILD
+Docker OS : $DOCKER_OS
+Kernel Version : $KERNEL_VERSION
+Clang version : $CLANG_VERSION ($CLANG_URL $CLANG_COMMIT)
+MD5 Checksum : $MD5_CHECKSUM"
     }
 
     tg_post_build "$ZIPNAME"
@@ -117,10 +117,10 @@ function build_kernel() {
 
         tg_post_error() {
             $TELEGRAM -f "$1" -t $TELEGRAM_TOKEN -c $CHATIDQ -T "Build Summary
-Build failed to compile after \`$((DIFF / 60)) minute(s) and $((DIFF % 60)) second(s)\`
-Date build : \`$DATE_BUILD\`
-Docker OS : \`$DOCKER_OS\`
-MD5 Checksum : \`$MD5_CHECKSUM\`"
+Build failed to compile after $((DIFF / 60)) minute(s) and $((DIFF % 60)) second(s)
+Date build : $DATE_BUILD
+Docker OS : $DOCKER_OS
+MD5 Checksum : $MD5_CHECKSUM"
         }
 
         tg_post_error "$WORK_DIR/build.log"
