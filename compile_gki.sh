@@ -55,36 +55,30 @@ function pack_kernel() {
     cd $ANYKERNEL || exit
     zip -r9 $ZIPNAME ./*
 
-    # Hitung waktu build
     END_TIME=$(date +%s)
     DIFF=$((END_TIME - START_TIME))
 
-    # Ambil informasi tambahan
     DATE_BUILD=$(date +"%A, %B %d, %Y | %H:%M:%S ETC")
     DOCKER_OS=$(lsb_release -d | cut -f2- || uname -o)
     KERNEL_VERSION=$(make -s kernelversion -C "$WORK_DIR/garnet" 2>/dev/null)
 
-    # Ambil versi clang dan commit hash
     CLANG_INFO=$("$WORK_DIR/prebuilts-master/clang/host/linux-x86/clang-19/bin/clang" --version)
     CLANG_VERSION=$("$WORK_DIR/prebuilts-master/clang/host/linux-x86/clang-19/bin/clang" --version | grep -oP 'version \K[^\s]+')
     CLANG_URL="https://android.googlesource.com/toolchain/llvm-project"
     CLANG_COMMIT=$(echo "$CLANG_INFO" | grep -oP 'based on r\K[0-9a-f]+') # Ambil commit hash
 
-    # Hitung MD5 Checksum dari file ZIP
     MD5_CHECKSUM=$(md5sum "$ZIPNAME" | awk '{ print $1 }')
 
-    # Kirim file ke Telegram dengan deskripsi lengkap menggunakan escape characters (monospace)
     tg_post_build() {
         $TELEGRAM -f "$1" -t $TELEGRAM_TOKEN -c $CHATIDQ -T "Build Summary
-Build took : $((DIFF / 60)) minute(s) and $((DIFF % 60)) second(s)
-Date build : $DATE_BUILD
-Docker OS : $DOCKER_OS
-Kernel Version : $KERNEL_VERSION
-Clang version : $CLANG_VERSION ($CLANG_URL $CLANG_COMMIT)
-MD5 Checksum : $MD5_CHECKSUM"
+Build took : \`$((DIFF / 60)) minute(s) and $((DIFF % 60)) second(s)\`
+Date build : \`$DATE_BUILD\`
+Docker OS : \`$DOCKER_OS\`
+Kernel Version : \`$KERNEL_VERSION\`
+Clang version : \`$CLANG_VERSION ($CLANG_URL $CLANG_COMMIT)\`
+MD5 Checksum : \`$MD5_CHECKSUM\`"
     }
 
-    # Panggil fungsi dengan path dan deskripsi
     tg_post_build "$ZIPNAME"
 
     echo -e "\n"
@@ -104,7 +98,9 @@ function build_kernel() {
     cd $WORK_DIR
     LTO=thin BUILD_CONFIG=garnet/build.config.gki.custom build/build.sh 2>&1 | tee build.log && cat build.log | nc termbin.com 9999
 
-    if [ -e "$KERN_IMG" ]; then
+    BUILD_STATUS=$?  
+
+    if [ $BUILD_STATUS -eq 0 ]; then
         echo -e "\n"
         echo -e "$green << compile kernel success! >> \n$white"
         echo -e "\n"
@@ -113,6 +109,21 @@ function build_kernel() {
         echo -e "\n"
         echo -e "$red << compile kernel failed! >> \n$white"
         echo -e "\n"
+
+        END_TIME=$(date +%s)
+        DIFF=$((END_TIME - START_TIME))
+        DATE_BUILD=$(date +"%A, %B %d, %Y | %H:%M:%S ETC")
+        MD5_CHECKSUM=$(md5sum "$WORK_DIR/build.log" | awk '{ print $1 }')
+
+        tg_post_error() {
+            $TELEGRAM -f "$1" -t $TELEGRAM_TOKEN -c $CHATIDQ -T "Build Summary
+Build failed to compile after \`$((DIFF / 60)) minute(s) and $((DIFF % 60)) second(s)\`
+Date build : \`$DATE_BUILD\`
+Docker OS : \`$DOCKER_OS\`
+MD5 Checksum : \`$MD5_CHECKSUM\`"
+        }
+
+        tg_post_error "$WORK_DIR/build.log"
     fi
 }
 
